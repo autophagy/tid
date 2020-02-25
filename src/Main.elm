@@ -93,13 +93,13 @@ update msg model =
     case msg of
         AddTimer ->
             let
-                a =
+                newTimer =
                     model.newTimer
 
-                newTimer =
-                    { a | id = a.id + 1 }
+                newTimerTemplate =
+                    { newTimer | id = newTimer.id + 1 }
             in
-            ( { model | timers = newTimer :: model.timers, newTimer = newTimer }, Cmd.none )
+            ( { model | timers = newTimer :: model.timers, newTimer = newTimerTemplate }, Cmd.none )
 
         DeleteLastTimer ->
             ( { model | timers = Maybe.withDefault [] (List.tail model.timers) }, Cmd.none )

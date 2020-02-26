@@ -173,18 +173,60 @@ viewTimer timer =
         [ id (String.fromInt timer.id), class "tid" ]
         [ div [ class "tid-id" ] [ text (String.fromInt timer.id) ]
         , div [ class "tid-time" ]
-            [ input [ type_ "text", name "hours", maxlength 2, value (formatTime (totalSecondsToHour timer.seconds)) ] []
+            [ input
+                [ type_ "text"
+                , name "hours"
+                , maxlength 2
+                , value (formatTime (totalSecondsToHour timer.seconds))
+                ]
+                []
             , text "."
-            , input [ type_ "text", name "hours", maxlength 2, value (formatTime (totalSecondsToMinutes timer.seconds)) ] []
+            , input
+                [ type_ "text"
+                , name "hours"
+                , maxlength 2
+                , value (formatTime (totalSecondsToMinutes timer.seconds))
+                ]
+                []
             , text "."
-            , input [ type_ "text", name "hours", maxlength 2, value (formatTime (totalSecondsToSeconds timer.seconds)) ] []
+            , input
+                [ type_ "text"
+                , name "hours"
+                , maxlength 2
+                , value (formatTime (totalSecondsToSeconds timer.seconds))
+                ]
+                []
             ]
         , div [ class "tid-title" ]
-            [ input [ type_ "text", name "timer-title", maxlength 20, value timer.title, onInput (TimerTitleChange timer.id) ] []
+            [ input
+                [ type_ "text"
+                , name "timer-title"
+                , maxlength 20
+                , value timer.title
+                , onInput (TimerTitleChange timer.id)
+                ]
+                []
             ]
         , div [ class "tid-control" ]
-            [ button [ title "Start/Pause the timer", classList [ ( "control-item", True ), ( "play-icon", not timer.playing ), ( "pause-icon", timer.playing ) ], onClick (ToggleTimer timer.id) ] []
-            , button [ title "Close the timer", classList [ ( "control-item", True ), ( "close-icon", True ) ], onClick (DeleteTimer timer.id) ] []
+            [ button
+                [ title "Start/Pause the timer"
+                , classList
+                    [ ( "control-item", True )
+                    , ( "play-icon", not timer.playing )
+                    , ( "pause-icon", timer.playing )
+                    ]
+                , onClick (ToggleTimer timer.id)
+                ]
+                []
+            , button
+                [ title "Close the timer"
+                , classList
+                    [ ( "control-item", True )
+                    , ( "close-icon", True )
+                    ]
+                , onClick (DeleteTimer timer.id)
+                ]
+                []
             ]
         ]
 

@@ -116,6 +116,7 @@ input[type="text"] {
     font-size: 36px;
     width: 40px;
     color: #070707;
+    text-align: center;
 }
 
 .tid .tid-title {

@@ -183,7 +183,10 @@ update msg model =
         TimerMinuteChange timerId text ->
             let
                 newMinute =
-                    clamp 0 59 (Maybe.withDefault 0 (String.toInt text))
+                    text
+                        |> String.toInt
+                        |> Maybe.withDefault 0
+                        |> clamp 0 59
             in
             ( { model
                 | timers =
@@ -203,7 +206,10 @@ update msg model =
         TimerSecondChange timerId text ->
             let
                 newSecond =
-                    clamp 0 59 (Maybe.withDefault 0 (String.toInt text))
+                    text
+                        |> String.toInt
+                        |> Maybe.withDefault 0
+                        |> clamp 0 59
             in
             ( { model
                 | timers =
@@ -286,7 +292,10 @@ view model =
                 ]
             ]
         , div [ id "tidspace" ]
-            (List.map viewTimer (List.reverse model.timers))
+            (model.timers
+                |> List.reverse
+                |> List.map viewTimer
+            )
         ]
 
 

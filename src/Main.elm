@@ -1,4 +1,4 @@
-module Main exposing (..)
+port module Main exposing (..)
 
 import Browser
 import Html exposing (Html, a, button, div, h1, img, input, text)
@@ -246,6 +246,10 @@ update msg model =
             ( { model | timers = List.filter (\timer -> timer.id /= timerId) model.timers }, Cmd.none )
 
         Tick _ ->
+            let
+                shouldPlay =
+                    List.length (List.filter (\timer -> timer.playing && totalSeconds timer.time == 0) model.timers) > 0
+            in
             ( { model
                 | timers =
                     List.map
@@ -258,7 +262,7 @@ update msg model =
                         )
                         model.timers
               }
-            , Cmd.none
+            , playAlert shouldPlay
             )
 
 
@@ -268,11 +272,14 @@ update msg model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    if List.length (List.filter (\timer -> timer.playing) model.timers) > 0 then
-        Time.every 1000 Tick
+    Time.every 1000 Tick
 
-    else
-        Sub.none
+
+
+---- PORTS ----
+
+
+port playAlert : Bool -> Cmd msg
 
 
 

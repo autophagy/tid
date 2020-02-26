@@ -4,6 +4,7 @@ import Browser
 import Html exposing (Html, a, button, div, h1, img, input, text)
 import Html.Attributes exposing (class, classList, id, maxlength, name, src, title, type_, value)
 import Html.Events exposing (onClick, onInput)
+import Time exposing (..)
 
 
 
@@ -86,6 +87,7 @@ type Msg
     | TimerTitleChange Int String
     | ToggleTimer Int
     | DeleteTimer Int
+    | Tick Time.Posix
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -145,6 +147,35 @@ update msg model =
         DeleteTimer timerId ->
             ( { model | timers = List.filter (\timer -> timer.id /= timerId) model.timers }, Cmd.none )
 
+        Tick _ ->
+            ( { model
+                | timers =
+                    List.map
+                        (\timer ->
+                            if timer.playing == True && timer.seconds > 0 then
+                                { timer | seconds = timer.seconds - 1 }
+
+                            else
+                                timer
+                        )
+                        model.timers
+              }
+            , Cmd.none
+            )
+
+
+
+---- SUBSCRIPTIONS ----
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    if List.length (List.filter (\timer -> timer.playing == True) model.timers) > 0 then
+        Time.every 1000 Tick
+
+    else
+        Sub.none
+
 
 
 ---- VIEW ----
@@ -170,7 +201,13 @@ view model =
 viewTimer : Timer -> Html Msg
 viewTimer timer =
     div
-        [ id (String.fromInt timer.id), class "tid" ]
+        [ id (String.fromInt timer.id)
+        , classList
+            [ ( "tid", True )
+            , ( "playing", timer.playing == True && timer.seconds > 0 )
+            , ( "finished", timer.playing == True && timer.seconds == 0 )
+            ]
+        ]
         [ div [ class "tid-id" ] [ text (String.fromInt timer.id) ]
         , div [ class "tid-time" ]
             [ input
@@ -241,5 +278,5 @@ main =
         { view = view
         , init = \_ -> init
         , update = update
-        , subscriptions = always Sub.none
+        , subscriptions = subscriptions
         }

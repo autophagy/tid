@@ -2,7 +2,7 @@ module Main exposing (..)
 
 import Browser
 import Html exposing (Html, a, button, div, h1, img, input, text)
-import Html.Attributes exposing (class, classList, id, maxlength, name, src, title, type_, value)
+import Html.Attributes exposing (class, classList, id, maxlength, name, readonly, src, title, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Time exposing (..)
 
@@ -14,7 +14,7 @@ import Time exposing (..)
 type alias Timer =
     { id : Int
     , title : String
-    , seconds : Int
+    , time : Time
     , playing : Bool
     }
 
@@ -26,6 +26,21 @@ type alias Time =
     }
 
 
+setHours : Int -> Time -> Time
+setHours newHours time =
+    { time | hours = newHours }
+
+
+setMinutes : Int -> Time -> Time
+setMinutes newMinutes time =
+    { time | minutes = newMinutes }
+
+
+setSeconds : Int -> Time -> Time
+setSeconds newSeconds time =
+    { time | seconds = newSeconds }
+
+
 type alias Model =
     { newTimer : Timer
     , timers : List Timer
@@ -34,7 +49,7 @@ type alias Model =
 
 initTimer : Timer
 initTimer =
-    { id = 0, title = "New Timer", seconds = 0, playing = False }
+    { id = 0, title = "New Timer", time = { hours = 0, minutes = 0, seconds = 0 }, playing = False }
 
 
 init : ( Model, Cmd Msg )
@@ -66,6 +81,20 @@ formatTime time =
         String.fromInt time
 
 
+totalSeconds : Time -> Int
+totalSeconds time =
+    (time.hours * 3600) + (time.minutes * 60) + time.seconds
+
+
+decrementTime : Time -> Time
+decrementTime time =
+    let
+        newSeconds =
+            totalSeconds time - 1
+    in
+    { hours = totalSecondsToHour newSeconds, minutes = totalSecondsToMinutes newSeconds, seconds = totalSecondsToSeconds newSeconds }
+
+
 updateTimer : Int -> String -> Timer -> Timer
 updateTimer id newTitle timer =
     if timer.id == id then
@@ -85,6 +114,9 @@ type Msg
     | PlayTimers
     | PauseTimers
     | TimerTitleChange Int String
+    | TimerHourChange Int String
+    | TimerMinuteChange Int String
+    | TimerSecondChange Int String
     | ToggleTimer Int
     | DeleteTimer Int
     | Tick Time.Posix
@@ -128,6 +160,66 @@ update msg model =
             , Cmd.none
             )
 
+        TimerHourChange timerId text ->
+            let
+                newHour =
+                    Maybe.withDefault 0 (String.toInt text)
+            in
+            ( { model
+                | timers =
+                    List.map
+                        (\timer ->
+                            if timer.id == timerId then
+                                { timer | time = setHours newHour timer.time }
+
+                            else
+                                timer
+                        )
+                        model.timers
+              }
+            , Cmd.none
+            )
+
+        TimerMinuteChange timerId text ->
+            let
+                newMinute =
+                    clamp 0 59 (Maybe.withDefault 0 (String.toInt text))
+            in
+            ( { model
+                | timers =
+                    List.map
+                        (\timer ->
+                            if timer.id == timerId then
+                                { timer | time = setMinutes newMinute timer.time }
+
+                            else
+                                timer
+                        )
+                        model.timers
+              }
+            , Cmd.none
+            )
+
+        TimerSecondChange timerId text ->
+            let
+                newSecond =
+                    clamp 0 59 (Maybe.withDefault 0 (String.toInt text))
+            in
+            ( { model
+                | timers =
+                    List.map
+                        (\timer ->
+                            if timer.id == timerId then
+                                { timer | time = setSeconds newSecond timer.time }
+
+                            else
+                                timer
+                        )
+                        model.timers
+              }
+            , Cmd.none
+            )
+
         ToggleTimer timerId ->
             ( { model
                 | timers =
@@ -152,8 +244,8 @@ update msg model =
                 | timers =
                     List.map
                         (\timer ->
-                            if timer.playing == True && timer.seconds > 0 then
-                                { timer | seconds = timer.seconds - 1 }
+                            if timer.playing && totalSeconds timer.time > 0 then
+                                { timer | time = decrementTime timer.time }
 
                             else
                                 timer
@@ -170,7 +262,7 @@ update msg model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    if List.length (List.filter (\timer -> timer.playing == True) model.timers) > 0 then
+    if List.length (List.filter (\timer -> timer.playing) model.timers) > 0 then
         Time.every 1000 Tick
 
     else
@@ -204,8 +296,8 @@ viewTimer timer =
         [ id (String.fromInt timer.id)
         , classList
             [ ( "tid", True )
-            , ( "playing", timer.playing == True && timer.seconds > 0 )
-            , ( "finished", timer.playing == True && timer.seconds == 0 )
+            , ( "playing", timer.playing && totalSeconds timer.time > 0 )
+            , ( "finished", timer.playing && totalSeconds timer.time == 0 )
             ]
         ]
         [ div [ class "tid-id" ] [ text (String.fromInt timer.id) ]
@@ -214,23 +306,47 @@ viewTimer timer =
                 [ type_ "text"
                 , name "hours"
                 , maxlength 2
-                , value (formatTime (totalSecondsToHour timer.seconds))
+                , value
+                    (if timer.playing then
+                        formatTime timer.time.hours
+
+                     else
+                        String.fromInt timer.time.hours
+                    )
+                , readonly timer.playing
+                , onInput (TimerHourChange timer.id)
                 ]
                 []
             , text "."
             , input
                 [ type_ "text"
-                , name "hours"
+                , name "minutes"
                 , maxlength 2
-                , value (formatTime (totalSecondsToMinutes timer.seconds))
+                , value
+                    (if timer.playing then
+                        formatTime timer.time.minutes
+
+                     else
+                        String.fromInt timer.time.minutes
+                    )
+                , readonly timer.playing
+                , onInput (TimerMinuteChange timer.id)
                 ]
                 []
             , text "."
             , input
                 [ type_ "text"
-                , name "hours"
+                , name "seconds"
                 , maxlength 2
-                , value (formatTime (totalSecondsToSeconds timer.seconds))
+                , value
+                    (if timer.playing then
+                        formatTime timer.time.seconds
+
+                     else
+                        String.fromInt timer.time.seconds
+                    )
+                , readonly timer.playing
+                , onInput (TimerSecondChange timer.id)
                 ]
                 []
             ]

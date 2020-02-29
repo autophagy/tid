@@ -38,13 +38,8 @@ conversionRules =
     ]
 
 
-convert : Conversion -> (Float -> Float -> Float) -> Float -> Float
-convert c op amnt =
-    op amnt c.rate
-
-
-convertIngredient : Ingredient -> Unit -> Unit -> Float -> Float
-convertIngredient ingredient fromUnit toUnit amount =
+convert : Ingredient -> Unit -> Unit -> Float -> Float
+convert ingredient fromUnit toUnit amount =
     let
         fromRule =
             conversionRules
@@ -58,12 +53,12 @@ convertIngredient ingredient fromUnit toUnit amount =
     in
     case fromRule of
         Just a ->
-            convert a (*) amount
+            amount * a.rate
 
         Nothing ->
             case inverseRule of
                 Just a ->
-                    convert a (/) amount
+                    amount / a.rate
 
                 Nothing ->
                     amount

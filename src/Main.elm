@@ -316,7 +316,7 @@ viewTimer timer =
             , ( "finished", timer.playing && totalSeconds timer.time == 0 )
             ]
         ]
-        [ div [ class "tid-id" ] [ text (String.fromInt timer.id) ]
+        [ div [ class "tid-id" ] [ String.fromInt timer.id |> text ]
         , div [ class "tid-time" ]
             [ input
                 [ type_ "text"
@@ -330,7 +330,7 @@ viewTimer timer =
                         String.fromInt timer.time.hours
                     )
                 , readonly timer.playing
-                , onInput (TimerHourChange timer.id)
+                , TimerHourChange timer.id |> onInput
                 ]
                 []
             , text "."
@@ -346,7 +346,7 @@ viewTimer timer =
                         String.fromInt timer.time.minutes
                     )
                 , readonly timer.playing
-                , onInput (TimerMinuteChange timer.id)
+                , TimerMinuteChange timer.id |> onInput
                 ]
                 []
             , text "."
@@ -362,7 +362,7 @@ viewTimer timer =
                         String.fromInt timer.time.seconds
                     )
                 , readonly timer.playing
-                , onInput (TimerSecondChange timer.id)
+                , TimerSecondChange timer.id |> onInput
                 ]
                 []
             ]
@@ -372,7 +372,7 @@ viewTimer timer =
                 , name "timer-title"
                 , maxlength 20
                 , value timer.title
-                , onInput (TimerTitleChange timer.id)
+                , TimerTitleChange timer.id |> onInput
                 ]
                 []
             ]
@@ -384,7 +384,7 @@ viewTimer timer =
                     , ( "play-icon", not timer.playing )
                     , ( "pause-icon", timer.playing )
                     ]
-                , onClick (ToggleTimer timer.id)
+                , ToggleTimer timer.id |> onClick
                 ]
                 []
             , button
@@ -393,7 +393,7 @@ viewTimer timer =
                     [ ( "control-item", True )
                     , ( "close-icon", True )
                     ]
-                , onClick (DeleteTimer timer.id)
+                , DeleteTimer timer.id |> onClick
                 ]
                 []
             ]

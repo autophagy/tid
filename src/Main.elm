@@ -104,6 +104,16 @@ updateTimer id newTitle timer =
         timer
 
 
+lowestPlayingTime : List Timer -> Maybe Int
+lowestPlayingTime timers =
+    List.head <| List.map (\timer -> totalSeconds timer.time) <| List.filter (\timer -> timer.playing) timers
+
+
+formatTotalSeconds : Int -> String
+formatTotalSeconds seconds =
+    "[" ++ (formatTime <| totalSecondsToHour seconds) ++ ":" ++ (formatTime <| totalSecondsToMinutes seconds) ++ ":" ++ (formatTime <| totalSecondsToSeconds seconds) ++ "]"
+
+
 
 ---- UPDATE ----
 
@@ -119,7 +129,9 @@ type Msg
     | TimerSecondChange Int String
     | ToggleTimer Int
     | DeleteTimer Int
-    | Tick Time.Posix
+    | DecrementTimeTick Time.Posix
+    | AlertTick Time.Posix
+    | UpdatePageTitleTick Time.Posix
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -245,11 +257,7 @@ update msg model =
         DeleteTimer timerId ->
             ( { model | timers = List.filter (\timer -> timer.id /= timerId) model.timers }, Cmd.none )
 
-        Tick _ ->
-            let
-                shouldPlay =
-                    List.length (List.filter (\timer -> timer.playing && totalSeconds timer.time == 0) model.timers) > 0
-            in
+        DecrementTimeTick _ ->
             ( { model
                 | timers =
                     List.map
@@ -262,8 +270,23 @@ update msg model =
                         )
                         model.timers
               }
-            , playAlert shouldPlay
+            , Cmd.none
             )
+
+        AlertTick _ ->
+            let
+                shouldPlay =
+                    List.length (List.filter (\timer -> timer.playing && totalSeconds timer.time == 0) model.timers) > 0
+            in
+            ( model, playAlert shouldPlay )
+
+        UpdatePageTitleTick _ ->
+            case lowestPlayingTime model.timers of
+                Just t ->
+                    ( model, updatePageTitle <| formatTotalSeconds t ++ "Tid " )
+
+                Nothing ->
+                    ( model, updatePageTitle "Tid" )
 
 
 
@@ -272,7 +295,7 @@ update msg model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Time.every 1000 Tick
+    Sub.batch [ Time.every 1000 DecrementTimeTick, Time.every 1000 AlertTick, Time.every 1000 UpdatePageTitleTick ]
 
 
 
@@ -280,6 +303,9 @@ subscriptions model =
 
 
 port playAlert : Bool -> Cmd msg
+
+
+port updatePageTitle : String -> Cmd msg
 
 
 

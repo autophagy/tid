@@ -17,3 +17,9 @@ app.ports.playAlert.subscribe(function (shouldPlay) {
 		sound.pause();
 	}
 })
+
+app.ports.updatePageTitle.subscribe(function (newTitle) {
+	if (document.title != newTitle) {
+		document.title = newTitle;
+	}
+})

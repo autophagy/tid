@@ -283,7 +283,7 @@ update msg model =
         UpdatePageTitleTick _ ->
             case lowestPlayingTime model.timers of
                 Just t ->
-                    ( model, updatePageTitle <| formatTotalSeconds t ++ "Tid " )
+                    ( model, updatePageTitle <| formatTotalSeconds t ++ " Tid" )
 
                 Nothing ->
                     ( model, updatePageTitle "Tid" )

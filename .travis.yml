@@ -6,7 +6,7 @@ branches:
   only:
     - master
 before_script:
-  - npm install --silent -g create-elm-app
+  - npm install --silent create-elm-app@4.2.5
 script:
   - elm-app build
 deploy:

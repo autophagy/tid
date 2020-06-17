@@ -10,7 +10,7 @@ Credits
 
 Alarm sound by `original_sound`_.
 
-.. image:: http://scieldas.autophagy.io/licenses/MIT.png
+.. image:: http://scieldas.autophagy.io/misc/licenses/mit.png
    :target: LICENSE
    :alt: MIT License
 

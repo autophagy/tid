@@ -1,0 +1,13 @@
+name: Build
+on:
+  push:
+    branches:
+
+jobs:
+  nix-build:
+    name: Nix build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: cachix/install-nix-action@v14.1
+      - run: nix-build

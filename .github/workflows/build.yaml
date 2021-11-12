@@ -20,3 +20,5 @@ jobs:
         with:
           branch: gh-pages
           folder: result
+          token: '${{ secrets.GHP }}'
+          clean: false

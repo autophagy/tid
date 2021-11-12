@@ -2,12 +2,21 @@ name: Build
 on:
   push:
     branches:
+      - master
 
 jobs:
-  nix-build:
-    name: Nix build
+  build-and-deploy:
+    name: Build and Deploy
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: cachix/install-nix-action@v14.1
-      - run: nix-build
+
+      - name: Nix Build
+        run: nix-build
+
+      - name: Deploy to Github Pages
+        uses: JamesIves/github-pages-deploy-action@4.1.5
+        with:
+          branch: gh-pages
+          folder: result

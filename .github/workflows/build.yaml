@@ -20,9 +20,11 @@ jobs:
         run: nix-build
 
       - name: Deploy to Github Pages
-        uses: peaceiris/actions-gh-pages@v3.7.3
+        uses: JamesIves/github-pages-deploy-action@4.1.6
         if: ${{ github.ref == 'refs/heads/master' }}
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./result
-          cname: tid.autophagy.io
+          branch: gh-pages
+          folder: result
+          clean: true
+          clean-exclude: |
+            CNAME

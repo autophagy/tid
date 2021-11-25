@@ -5,19 +5,43 @@ on:
       - master
 
 jobs:
+  elm-review:
+    name: Elm Review
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: cachix/install-nix-action@v14.1
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+      - name: 'Elm Review'
+        run: nix-shell --run "elm-review"
+
+  elm-format:
+    name: Elm Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: cachix/install-nix-action@v14.1
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+      - name: 'Elm Format'
+        run: nix-shell --run "elm-format --validate src tests"
+
   test:
     name: Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: cachix/install-nix-action@v14.1
-      - name: 'Elm Review'
-        run: nix-shell --run "elm-review"
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+      - name: 'Elm Test'
+        run: nix-shell --run "elm-test"
 
   build-and-deploy:
     name: Build and Deploy
     runs-on: ubuntu-latest
-    needs: [ test ]
+    needs: [ elm-review, elm-format, test ]
     steps:
       - uses: actions/checkout@v2
       - uses: cachix/install-nix-action@v14.1

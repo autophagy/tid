@@ -5192,7 +5192,7 @@ var $elm$core$Task$perform = F2(
 var $elm$browser$Browser$element = _Browser_element;
 var $author$project$Main$initTimer = {
 	id: 0,
-	playing: false,
+	targetTime: $elm$core$Maybe$Nothing,
 	time: {hours: 0, minutes: 0, seconds: 0},
 	title: 'New Timer'
 };
@@ -5626,7 +5626,7 @@ var $elm$time$Time$every = F2(
 		return $elm$time$Time$subscription(
 			A2($elm$time$Time$Every, interval, tagger));
 	});
-var $author$project$Main$subscriptions = function (model) {
+var $author$project$Main$subscriptions = function (_v0) {
 	return $elm$core$Platform$Sub$batch(
 		_List_fromArray(
 			[
@@ -5635,13 +5635,26 @@ var $author$project$Main$subscriptions = function (model) {
 				A2($elm$time$Time$every, 1000, $author$project$Main$UpdatePageTitleTick)
 			]));
 };
+var $author$project$Main$SetTimerTarget = F2(
+	function (a, b) {
+		return {$: 'SetTimerTarget', a: a, b: b};
+	});
 var $elm$core$Basics$clamp = F3(
 	function (low, high, number) {
 		return (_Utils_cmp(number, low) < 0) ? low : ((_Utils_cmp(number, high) > 0) ? high : number);
 	});
+var $elm$time$Time$posixToMillis = function (_v0) {
+	var millis = _v0.a;
+	return millis;
+};
 var $author$project$Main$totalSeconds = function (time) {
 	return ((time.hours * 3600) + (time.minutes * 60)) + time.seconds;
 };
+var $author$project$Main$createTargetTime = F2(
+	function (started, delta) {
+		return $elm$time$Time$millisToPosix(
+			$elm$time$Time$posixToMillis(started) + ($author$project$Main$totalSeconds(delta) * 1000));
+	});
 var $author$project$Main$totalSecondsToHour = function (seconds) {
 	return (seconds / 3600) | 0;
 };
@@ -5651,14 +5664,15 @@ var $author$project$Main$totalSecondsToMinutes = function (seconds) {
 var $author$project$Main$totalSecondsToSeconds = function (seconds) {
 	return (seconds - ($author$project$Main$totalSecondsToHour(seconds) * 3600)) - ($author$project$Main$totalSecondsToMinutes(seconds) * 60);
 };
-var $author$project$Main$decrementTime = function (time) {
-	var newSeconds = $author$project$Main$totalSeconds(time) - 1;
-	return {
-		hours: $author$project$Main$totalSecondsToHour(newSeconds),
-		minutes: $author$project$Main$totalSecondsToMinutes(newSeconds),
-		seconds: $author$project$Main$totalSecondsToSeconds(newSeconds)
-	};
-};
+var $author$project$Main$decrementTime = F2(
+	function (target, now) {
+		var diff = (($elm$time$Time$posixToMillis(target) - $elm$time$Time$posixToMillis(now)) / 1000) | 0;
+		return {
+			hours: $author$project$Main$totalSecondsToHour(diff),
+			minutes: $author$project$Main$totalSecondsToMinutes(diff),
+			seconds: $author$project$Main$totalSecondsToSeconds(diff)
+		};
+	});
 var $elm$core$List$filter = F2(
 	function (isGood, list) {
 		return A3(
@@ -5688,22 +5702,29 @@ var $elm$core$List$head = function (list) {
 		return $elm$core$Maybe$Nothing;
 	}
 };
+var $elm$core$List$sortBy = _List_sortBy;
+var $elm$core$List$sort = function (xs) {
+	return A2($elm$core$List$sortBy, $elm$core$Basics$identity, xs);
+};
+var $author$project$Main$timerIsPlaying = function (timer) {
+	var _v0 = timer.targetTime;
+	if (_v0.$ === 'Just') {
+		return true;
+	} else {
+		return false;
+	}
+};
 var $author$project$Main$lowestPlayingTime = function (timers) {
 	return $elm$core$List$head(
-		A2(
-			$elm$core$List$map,
-			function (timer) {
-				return $author$project$Main$totalSeconds(timer.time);
-			},
+		$elm$core$List$sort(
 			A2(
-				$elm$core$List$filter,
+				$elm$core$List$map,
 				function (timer) {
-					return timer.playing;
+					return $author$project$Main$totalSeconds(timer.time);
 				},
-				timers)));
+				A2($elm$core$List$filter, $author$project$Main$timerIsPlaying, timers))));
 };
 var $elm$core$Basics$neq = _Utils_notEqual;
-var $elm$core$Basics$not = _Basics_not;
 var $elm$json$Json$Encode$bool = _Json_wrap;
 var $author$project$Main$playAlert = _Platform_outgoingPort('playAlert', $elm$json$Json$Encode$bool);
 var $author$project$Main$setHours = F2(
@@ -5773,19 +5794,17 @@ var $author$project$Main$update = F2(
 					$elm$core$Platform$Cmd$none);
 			case 'PlayTimers':
 				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{
-							timers: A2(
-								$elm$core$List$map,
-								function (timer) {
-									return _Utils_update(
-										timer,
-										{playing: true});
-								},
-								model.timers)
-						}),
-					$elm$core$Platform$Cmd$none);
+					model,
+					$elm$core$Platform$Cmd$batch(
+						A2(
+							$elm$core$List$map,
+							function (timer) {
+								return A2(
+									$elm$core$Task$perform,
+									$author$project$Main$SetTimerTarget(timer.id),
+									$elm$time$Time$now);
+							},
+							model.timers)));
 			case 'PauseTimers':
 				return _Utils_Tuple2(
 					_Utils_update(
@@ -5796,7 +5815,7 @@ var $author$project$Main$update = F2(
 								function (timer) {
 									return _Utils_update(
 										timer,
-										{playing: false});
+										{targetTime: $elm$core$Maybe$Nothing});
 								},
 								model.timers)
 						}),
@@ -5895,7 +5914,44 @@ var $author$project$Main$update = F2(
 								model.timers)
 						}),
 					$elm$core$Platform$Cmd$none);
-			case 'ToggleTimer':
+			case 'PlayTimer':
+				var timerId = msg.a;
+				return _Utils_Tuple2(
+					model,
+					A2(
+						$elm$core$Task$perform,
+						$author$project$Main$SetTimerTarget(timerId),
+						$elm$time$Time$now));
+			case 'SetTimerTarget':
+				var timerId = msg.a;
+				var time = msg.b;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							timers: A2(
+								$elm$core$List$map,
+								function (timer) {
+									if (_Utils_eq(timer.id, timerId)) {
+										var _v1 = timer.targetTime;
+										if (_v1.$ === 'Just') {
+											return timer;
+										} else {
+											return _Utils_update(
+												timer,
+												{
+													targetTime: $elm$core$Maybe$Just(
+														A2($author$project$Main$createTargetTime, time, timer.time))
+												});
+										}
+									} else {
+										return timer;
+									}
+								},
+								model.timers)
+						}),
+					$elm$core$Platform$Cmd$none);
+			case 'StopTimer':
 				var timerId = msg.a;
 				return _Utils_Tuple2(
 					_Utils_update(
@@ -5906,7 +5962,7 @@ var $author$project$Main$update = F2(
 								function (timer) {
 									return _Utils_eq(timer.id, timerId) ? _Utils_update(
 										timer,
-										{playing: !timer.playing}) : timer;
+										{targetTime: $elm$core$Maybe$Nothing}) : timer;
 								},
 								model.timers)
 						}),
@@ -5926,6 +5982,7 @@ var $author$project$Main$update = F2(
 						}),
 					$elm$core$Platform$Cmd$none);
 			case 'DecrementTimeTick':
+				var time = msg.a;
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
@@ -5933,11 +5990,17 @@ var $author$project$Main$update = F2(
 							timers: A2(
 								$elm$core$List$map,
 								function (timer) {
-									return (timer.playing && ($author$project$Main$totalSeconds(timer.time) > 0)) ? _Utils_update(
-										timer,
-										{
-											time: $author$project$Main$decrementTime(timer.time)
-										}) : timer;
+									var _v2 = timer.targetTime;
+									if (_v2.$ === 'Just') {
+										var targetTime = _v2.a;
+										return ($author$project$Main$totalSeconds(timer.time) > 0) ? _Utils_update(
+											timer,
+											{
+												time: A2($author$project$Main$decrementTime, targetTime, time)
+											}) : timer;
+									} else {
+										return timer;
+									}
 								},
 								model.timers)
 						}),
@@ -5947,16 +6010,16 @@ var $author$project$Main$update = F2(
 					A2(
 						$elm$core$List$filter,
 						function (timer) {
-							return timer.playing && (!$author$project$Main$totalSeconds(timer.time));
+							return $author$project$Main$timerIsPlaying(timer) && (!$author$project$Main$totalSeconds(timer.time));
 						},
 						model.timers)) > 0;
 				return _Utils_Tuple2(
 					model,
 					$author$project$Main$playAlert(shouldPlay));
 			default:
-				var _v1 = $author$project$Main$lowestPlayingTime(model.timers);
-				if (_v1.$ === 'Just') {
-					var t = _v1.a;
+				var _v3 = $author$project$Main$lowestPlayingTime(model.timers);
+				if (_v3.$ === 'Just') {
+					var t = _v3.a;
 					return _Utils_Tuple2(
 						model,
 						$author$project$Main$updatePageTitle(
@@ -6012,6 +6075,12 @@ var $elm$html$Html$text = $elm$virtual_dom$VirtualDom$text;
 var $author$project$Main$DeleteTimer = function (a) {
 	return {$: 'DeleteTimer', a: a};
 };
+var $author$project$Main$PlayTimer = function (a) {
+	return {$: 'PlayTimer', a: a};
+};
+var $author$project$Main$StopTimer = function (a) {
+	return {$: 'StopTimer', a: a};
+};
 var $author$project$Main$TimerHourChange = F2(
 	function (a, b) {
 		return {$: 'TimerHourChange', a: a, b: b};
@@ -6028,9 +6097,6 @@ var $author$project$Main$TimerTitleChange = F2(
 	function (a, b) {
 		return {$: 'TimerTitleChange', a: a, b: b};
 	});
-var $author$project$Main$ToggleTimer = function (a) {
-	return {$: 'ToggleTimer', a: a};
-};
 var $elm$html$Html$button = _VirtualDom_node('button');
 var $elm$core$Tuple$second = function (_v0) {
 	var y = _v0.b;
@@ -6054,6 +6120,7 @@ var $elm$html$Html$Attributes$maxlength = function (n) {
 		$elm$core$String$fromInt(n));
 };
 var $elm$html$Html$Attributes$name = $elm$html$Html$Attributes$stringProperty('name');
+var $elm$core$Basics$not = _Basics_not;
 var $elm$html$Html$Events$alwaysStop = function (x) {
 	return _Utils_Tuple2(x, true);
 };
@@ -6111,10 +6178,10 @@ var $author$project$Main$viewTimer = function (timer) {
 						_Utils_Tuple2('tid', true),
 						_Utils_Tuple2(
 						'playing',
-						timer.playing && ($author$project$Main$totalSeconds(timer.time) > 0)),
+						$author$project$Main$timerIsPlaying(timer) && ($author$project$Main$totalSeconds(timer.time) > 0)),
 						_Utils_Tuple2(
 						'finished',
-						timer.playing && (!$author$project$Main$totalSeconds(timer.time)))
+						$author$project$Main$timerIsPlaying(timer) && (!$author$project$Main$totalSeconds(timer.time)))
 					]))
 			]),
 		_List_fromArray(
@@ -6146,8 +6213,9 @@ var $author$project$Main$viewTimer = function (timer) {
 								$elm$html$Html$Attributes$name('hours'),
 								$elm$html$Html$Attributes$maxlength(2),
 								$elm$html$Html$Attributes$value(
-								timer.playing ? $author$project$Main$formatTime(timer.time.hours) : $elm$core$String$fromInt(timer.time.hours)),
-								$elm$html$Html$Attributes$readonly(timer.playing),
+								$author$project$Main$timerIsPlaying(timer) ? $author$project$Main$formatTime(timer.time.hours) : $elm$core$String$fromInt(timer.time.hours)),
+								$elm$html$Html$Attributes$readonly(
+								$author$project$Main$timerIsPlaying(timer)),
 								$elm$html$Html$Events$onInput(
 								$author$project$Main$TimerHourChange(timer.id))
 							]),
@@ -6161,8 +6229,9 @@ var $author$project$Main$viewTimer = function (timer) {
 								$elm$html$Html$Attributes$name('minutes'),
 								$elm$html$Html$Attributes$maxlength(2),
 								$elm$html$Html$Attributes$value(
-								timer.playing ? $author$project$Main$formatTime(timer.time.minutes) : $elm$core$String$fromInt(timer.time.minutes)),
-								$elm$html$Html$Attributes$readonly(timer.playing),
+								$author$project$Main$timerIsPlaying(timer) ? $author$project$Main$formatTime(timer.time.minutes) : $elm$core$String$fromInt(timer.time.minutes)),
+								$elm$html$Html$Attributes$readonly(
+								$author$project$Main$timerIsPlaying(timer)),
 								$elm$html$Html$Events$onInput(
 								$author$project$Main$TimerMinuteChange(timer.id))
 							]),
@@ -6176,8 +6245,9 @@ var $author$project$Main$viewTimer = function (timer) {
 								$elm$html$Html$Attributes$name('seconds'),
 								$elm$html$Html$Attributes$maxlength(2),
 								$elm$html$Html$Attributes$value(
-								timer.playing ? $author$project$Main$formatTime(timer.time.seconds) : $elm$core$String$fromInt(timer.time.seconds)),
-								$elm$html$Html$Attributes$readonly(timer.playing),
+								$author$project$Main$timerIsPlaying(timer) ? $author$project$Main$formatTime(timer.time.seconds) : $elm$core$String$fromInt(timer.time.seconds)),
+								$elm$html$Html$Attributes$readonly(
+								$author$project$Main$timerIsPlaying(timer)),
 								$elm$html$Html$Events$onInput(
 								$author$project$Main$TimerSecondChange(timer.id))
 							]),
@@ -6221,11 +6291,16 @@ var $author$project$Main$viewTimer = function (timer) {
 								_List_fromArray(
 									[
 										_Utils_Tuple2('control-item', true),
-										_Utils_Tuple2('play-icon', !timer.playing),
-										_Utils_Tuple2('pause-icon', timer.playing)
+										_Utils_Tuple2(
+										'play-icon',
+										!$author$project$Main$timerIsPlaying(timer)),
+										_Utils_Tuple2(
+										'pause-icon',
+										$author$project$Main$timerIsPlaying(timer))
 									])),
-								$elm$html$Html$Events$onClick(
-								$author$project$Main$ToggleTimer(timer.id))
+								$author$project$Main$timerIsPlaying(timer) ? $elm$html$Html$Events$onClick(
+								$author$project$Main$StopTimer(timer.id)) : $elm$html$Html$Events$onClick(
+								$author$project$Main$PlayTimer(timer.id))
 							]),
 						_List_Nil),
 						A2(

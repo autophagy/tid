@@ -26,9 +26,7 @@ import NoMissingTypeAnnotationInLetIn
 import NoMissingTypeExpose
 import NoPrematureLetComputation
 import NoSimpleLetBody
-import NoUnused.CustomTypeConstructorArgs
 import NoUnused.CustomTypeConstructors
-import NoUnused.Dependencies
 import NoUnused.Exports
 import NoUnused.Modules
 import NoUnused.Parameters
@@ -56,14 +54,13 @@ config =
     , NoSimpleLetBody.rule
     , NoPrematureLetComputation.rule
     , NoUnused.CustomTypeConstructors.rule []
-    , NoUnused.CustomTypeConstructorArgs.rule
-    , NoUnused.Dependencies.rule
     , NoUnused.Exports.rule
     , NoUnused.Modules.rule
     , NoUnused.Parameters.rule
     , NoUnused.Patterns.rule
     , NoUnused.Variables.rule
     , Simplify.rule Simplify.defaults
-    , CognitiveComplexity.rule 29
+    -- Reduce this!
+    , CognitiveComplexity.rule 33
     ]
-        |> List.map (Rule.ignoreErrorsForFiles [ ])
+        |> List.map (Rule.ignoreErrorsForFiles [ "src/Convert.elm" ])

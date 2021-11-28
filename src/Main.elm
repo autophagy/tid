@@ -87,8 +87,8 @@ totalSeconds time =
     (time.hours * 3600) + (time.minutes * 60) + time.seconds
 
 
-decrementTime : Time.Posix -> Time.Posix -> Time
-decrementTime target now =
+refreshTimeLeft : Time.Posix -> Time.Posix -> Time
+refreshTimeLeft target now =
     let
         diff : Int
         diff =
@@ -139,7 +139,7 @@ type Msg
     | SetTimerTarget Int Time.Posix
     | StopTimer Int
     | DeleteTimer Int
-    | DecrementTimeTick Time.Posix
+    | RefreshTimeLeftTick Time.Posix
     | AlertTick Time.Posix
     | UpdatePageTitleTick Time.Posix
 
@@ -296,7 +296,7 @@ update msg model =
         DeleteTimer timerId ->
             ( { model | timers = List.filter (\timer -> timer.id /= timerId) model.timers }, Cmd.none )
 
-        DecrementTimeTick time ->
+        RefreshTimeLeftTick time ->
             ( { model
                 | timers =
                     List.map
@@ -304,7 +304,7 @@ update msg model =
                             case timer.targetTime of
                                 Just targetTime ->
                                     if totalSeconds timer.time > 0 then
-                                        { timer | time = decrementTime targetTime time }
+                                        { timer | time = refreshTimeLeft targetTime time }
 
                                     else
                                         timer
@@ -340,7 +340,7 @@ update msg model =
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-    Sub.batch [ Time.every 1000 DecrementTimeTick, Time.every 1000 AlertTick, Time.every 1000 UpdatePageTitleTick ]
+    Sub.batch [ Time.every 1000 RefreshTimeLeftTick, Time.every 1000 AlertTick, Time.every 1000 UpdatePageTitleTick ]
 
 
 

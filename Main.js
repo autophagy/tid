@@ -5204,8 +5204,8 @@ var $author$project$Main$init = _Utils_Tuple2(
 var $author$project$Main$AlertTick = function (a) {
 	return {$: 'AlertTick', a: a};
 };
-var $author$project$Main$DecrementTimeTick = function (a) {
-	return {$: 'DecrementTimeTick', a: a};
+var $author$project$Main$RefreshTimeLeftTick = function (a) {
+	return {$: 'RefreshTimeLeftTick', a: a};
 };
 var $author$project$Main$UpdatePageTitleTick = function (a) {
 	return {$: 'UpdatePageTitleTick', a: a};
@@ -5630,7 +5630,7 @@ var $author$project$Main$subscriptions = function (_v0) {
 	return $elm$core$Platform$Sub$batch(
 		_List_fromArray(
 			[
-				A2($elm$time$Time$every, 1000, $author$project$Main$DecrementTimeTick),
+				A2($elm$time$Time$every, 1000, $author$project$Main$RefreshTimeLeftTick),
 				A2($elm$time$Time$every, 1000, $author$project$Main$AlertTick),
 				A2($elm$time$Time$every, 1000, $author$project$Main$UpdatePageTitleTick)
 			]));
@@ -5655,24 +5655,6 @@ var $author$project$Main$createTargetTime = F2(
 		return $elm$time$Time$millisToPosix(
 			$elm$time$Time$posixToMillis(started) + ($author$project$Main$totalSeconds(delta) * 1000));
 	});
-var $author$project$Main$totalSecondsToHour = function (seconds) {
-	return (seconds / 3600) | 0;
-};
-var $author$project$Main$totalSecondsToMinutes = function (seconds) {
-	return ((seconds - ($author$project$Main$totalSecondsToHour(seconds) * 3600)) / 60) | 0;
-};
-var $author$project$Main$totalSecondsToSeconds = function (seconds) {
-	return (seconds - ($author$project$Main$totalSecondsToHour(seconds) * 3600)) - ($author$project$Main$totalSecondsToMinutes(seconds) * 60);
-};
-var $author$project$Main$decrementTime = F2(
-	function (target, now) {
-		var diff = (($elm$time$Time$posixToMillis(target) - $elm$time$Time$posixToMillis(now)) / 1000) | 0;
-		return {
-			hours: $author$project$Main$totalSecondsToHour(diff),
-			minutes: $author$project$Main$totalSecondsToMinutes(diff),
-			seconds: $author$project$Main$totalSecondsToSeconds(diff)
-		};
-	});
 var $elm$core$List$filter = F2(
 	function (isGood, list) {
 		return A3(
@@ -5686,6 +5668,15 @@ var $elm$core$List$filter = F2(
 	});
 var $author$project$Main$formatTime = function (time) {
 	return (time < 10) ? ('0' + $elm$core$String$fromInt(time)) : $elm$core$String$fromInt(time);
+};
+var $author$project$Main$totalSecondsToHour = function (seconds) {
+	return (seconds / 3600) | 0;
+};
+var $author$project$Main$totalSecondsToMinutes = function (seconds) {
+	return ((seconds - ($author$project$Main$totalSecondsToHour(seconds) * 3600)) / 60) | 0;
+};
+var $author$project$Main$totalSecondsToSeconds = function (seconds) {
+	return (seconds - ($author$project$Main$totalSecondsToHour(seconds) * 3600)) - ($author$project$Main$totalSecondsToMinutes(seconds) * 60);
 };
 var $author$project$Main$formatTotalSeconds = function (seconds) {
 	return '[' + ($author$project$Main$formatTime(
@@ -5727,6 +5718,15 @@ var $author$project$Main$lowestPlayingTime = function (timers) {
 var $elm$core$Basics$neq = _Utils_notEqual;
 var $elm$json$Json$Encode$bool = _Json_wrap;
 var $author$project$Main$playAlert = _Platform_outgoingPort('playAlert', $elm$json$Json$Encode$bool);
+var $author$project$Main$refreshTimeLeft = F2(
+	function (target, now) {
+		var diff = (($elm$time$Time$posixToMillis(target) - $elm$time$Time$posixToMillis(now)) / 1000) | 0;
+		return {
+			hours: $author$project$Main$totalSecondsToHour(diff),
+			minutes: $author$project$Main$totalSecondsToMinutes(diff),
+			seconds: $author$project$Main$totalSecondsToSeconds(diff)
+		};
+	});
 var $author$project$Main$setHours = F2(
 	function (newHours, time) {
 		return _Utils_update(
@@ -5981,7 +5981,7 @@ var $author$project$Main$update = F2(
 								model.timers)
 						}),
 					$elm$core$Platform$Cmd$none);
-			case 'DecrementTimeTick':
+			case 'RefreshTimeLeftTick':
 				var time = msg.a;
 				return _Utils_Tuple2(
 					_Utils_update(
@@ -5996,7 +5996,7 @@ var $author$project$Main$update = F2(
 										return ($author$project$Main$totalSeconds(timer.time) > 0) ? _Utils_update(
 											timer,
 											{
-												time: A2($author$project$Main$decrementTime, targetTime, time)
+												time: A2($author$project$Main$refreshTimeLeft, targetTime, time)
 											}) : timer;
 									} else {
 										return timer;

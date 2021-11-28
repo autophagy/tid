@@ -15,7 +15,7 @@ import Time
 type alias Timer =
     { id : Int
     , title : String
-    , time : Time
+    , timeLeft : Time
     , targetTime : Maybe Time.Posix
     }
 
@@ -27,19 +27,40 @@ type alias Time =
     }
 
 
-setHours : Int -> Time -> Time
-setHours newHours time =
-    { time | hours = newHours }
+setHours : String -> Time -> Time
+setHours text timeLeft =
+    let
+        newHour : Int
+        newHour =
+            Maybe.withDefault 0 (String.toInt text)
+    in
+    { timeLeft | hours = newHour }
 
 
-setMinutes : Int -> Time -> Time
-setMinutes newMinutes time =
-    { time | minutes = newMinutes }
+setMinutes : String -> Time -> Time
+setMinutes text timeLeft =
+    let
+        newMinute : Int
+        newMinute =
+            text
+                |> String.toInt
+                |> Maybe.withDefault 0
+                |> clamp 0 59
+    in
+    { timeLeft | minutes = newMinute }
 
 
-setSeconds : Int -> Time -> Time
-setSeconds newSeconds time =
-    { time | seconds = newSeconds }
+setSeconds : String -> Time -> Time
+setSeconds text timeLeft =
+    let
+        newSecond : Int
+        newSecond =
+            text
+                |> String.toInt
+                |> Maybe.withDefault 0
+                |> clamp 0 59
+    in
+    { timeLeft | seconds = newSecond }
 
 
 type alias Model =
@@ -50,7 +71,7 @@ type alias Model =
 
 initTimer : Timer
 initTimer =
-    { id = 0, title = "New Timer", time = { hours = 0, minutes = 0, seconds = 0 }, targetTime = Nothing }
+    { id = 0, title = "New Timer", timeLeft = { hours = 0, minutes = 0, seconds = 0 }, targetTime = Nothing }
 
 
 init : ( Model, Cmd Msg )
@@ -83,8 +104,8 @@ formatTime time =
 
 
 totalSeconds : Time -> Int
-totalSeconds time =
-    (time.hours * 3600) + (time.minutes * 60) + time.seconds
+totalSeconds timeLeft =
+    (timeLeft.hours * 3600) + (timeLeft.minutes * 60) + timeLeft.seconds
 
 
 refreshTimeLeft : Time.Posix -> Time.Posix -> Time
@@ -99,7 +120,7 @@ refreshTimeLeft target now =
 
 lowestPlayingTime : List Timer -> Maybe Int
 lowestPlayingTime timers =
-    List.head <| List.sort <| List.map (\timer -> totalSeconds timer.time) <| List.filter timerIsPlaying timers
+    List.head <| List.sort <| List.map (\timer -> totalSeconds timer.timeLeft) <| List.filter timerIsPlaying timers
 
 
 formatTotalSeconds : Int -> String
@@ -132,9 +153,7 @@ type Msg
     | PlayTimers
     | PauseTimers
     | TimerTitleChange Int String
-    | TimerHourChange Int String
-    | TimerMinuteChange Int String
-    | TimerSecondChange Int String
+    | TimerTimeChange (String -> Time -> Time) Int String
     | PlayTimer Int
     | SetTimerTarget Int Time.Posix
     | StopTimer Int
@@ -184,66 +203,13 @@ update msg model =
             , Cmd.none
             )
 
-        TimerHourChange timerId text ->
-            let
-                newHour : Int
-                newHour =
-                    Maybe.withDefault 0 (String.toInt text)
-            in
+        TimerTimeChange f timerId text ->
             ( { model
                 | timers =
                     List.map
                         (\timer ->
                             if timer.id == timerId then
-                                { timer | time = setHours newHour timer.time }
-
-                            else
-                                timer
-                        )
-                        model.timers
-              }
-            , Cmd.none
-            )
-
-        TimerMinuteChange timerId text ->
-            let
-                newMinute : Int
-                newMinute =
-                    text
-                        |> String.toInt
-                        |> Maybe.withDefault 0
-                        |> clamp 0 59
-            in
-            ( { model
-                | timers =
-                    List.map
-                        (\timer ->
-                            if timer.id == timerId then
-                                { timer | time = setMinutes newMinute timer.time }
-
-                            else
-                                timer
-                        )
-                        model.timers
-              }
-            , Cmd.none
-            )
-
-        TimerSecondChange timerId text ->
-            let
-                newSecond : Int
-                newSecond =
-                    text
-                        |> String.toInt
-                        |> Maybe.withDefault 0
-                        |> clamp 0 59
-            in
-            ( { model
-                | timers =
-                    List.map
-                        (\timer ->
-                            if timer.id == timerId then
-                                { timer | time = setSeconds newSecond timer.time }
+                                { timer | timeLeft = f text timer.timeLeft }
 
                             else
                                 timer
@@ -267,7 +233,7 @@ update msg model =
                                         timer
 
                                     Nothing ->
-                                        { timer | targetTime = Just <| createTargetTime time timer.time }
+                                        { timer | targetTime = Just <| createTargetTime time timer.timeLeft }
 
                             else
                                 timer
@@ -303,8 +269,8 @@ update msg model =
                         (\timer ->
                             case timer.targetTime of
                                 Just targetTime ->
-                                    if totalSeconds timer.time > 0 then
-                                        { timer | time = refreshTimeLeft targetTime time }
+                                    if totalSeconds timer.timeLeft > 0 then
+                                        { timer | timeLeft = refreshTimeLeft targetTime time }
 
                                     else
                                         timer
@@ -321,7 +287,7 @@ update msg model =
             let
                 shouldPlay : Bool
                 shouldPlay =
-                    List.length (List.filter (\timer -> timerIsPlaying timer && totalSeconds timer.time == 0) model.timers) > 0
+                    List.length (List.filter (\timer -> timerIsPlaying timer && totalSeconds timer.timeLeft == 0) model.timers) > 0
             in
             ( model, playAlert shouldPlay )
 
@@ -383,8 +349,8 @@ viewTimer timer =
         [ id (String.fromInt timer.id)
         , classList
             [ ( "tid", True )
-            , ( "playing", timerIsPlaying timer && totalSeconds timer.time > 0 )
-            , ( "finished", timerIsPlaying timer && totalSeconds timer.time == 0 )
+            , ( "playing", timerIsPlaying timer && totalSeconds timer.timeLeft > 0 )
+            , ( "finished", timerIsPlaying timer && totalSeconds timer.timeLeft == 0 )
             ]
         ]
         [ div [ class "tid-id" ] [ String.fromInt timer.id |> text ]
@@ -395,13 +361,13 @@ viewTimer timer =
                 , maxlength 2
                 , value
                     (if timerIsPlaying timer then
-                        formatTime timer.time.hours
+                        formatTime timer.timeLeft.hours
 
                      else
-                        String.fromInt timer.time.hours
+                        String.fromInt timer.timeLeft.hours
                     )
                 , readonly <| timerIsPlaying timer
-                , TimerHourChange timer.id |> onInput
+                , TimerTimeChange setHours timer.id |> onInput
                 ]
                 []
             , text "."
@@ -411,13 +377,13 @@ viewTimer timer =
                 , maxlength 2
                 , value
                     (if timerIsPlaying timer then
-                        formatTime timer.time.minutes
+                        formatTime timer.timeLeft.minutes
 
                      else
-                        String.fromInt timer.time.minutes
+                        String.fromInt timer.timeLeft.minutes
                     )
                 , readonly <| timerIsPlaying timer
-                , TimerMinuteChange timer.id |> onInput
+                , TimerTimeChange setMinutes timer.id |> onInput
                 ]
                 []
             , text "."
@@ -427,13 +393,13 @@ viewTimer timer =
                 , maxlength 2
                 , value
                     (if timerIsPlaying timer then
-                        formatTime timer.time.seconds
+                        formatTime timer.timeLeft.seconds
 
                      else
-                        String.fromInt timer.time.seconds
+                        String.fromInt timer.timeLeft.seconds
                     )
                 , readonly <| timerIsPlaying timer
-                , TimerSecondChange timer.id |> onInput
+                , TimerTimeChange setSeconds timer.id |> onInput
                 ]
                 []
             ]

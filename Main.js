@@ -6011,6 +6011,10 @@ var $author$project$Main$TimerTitleChange = F2(
 		return {$: 'TimerTitleChange', a: a, b: b};
 	});
 var $elm$html$Html$button = _VirtualDom_node('button');
+var $elm$core$Basics$clamp = F3(
+	function (low, high, number) {
+		return (_Utils_cmp(number, low) < 0) ? low : ((_Utils_cmp(number, high) > 0) ? high : number);
+	});
 var $elm$core$Tuple$second = function (_v0) {
 	var y = _v0.b;
 	return y;
@@ -6026,6 +6030,24 @@ var $elm$html$Html$Attributes$classList = function (classes) {
 				A2($elm$core$List$filter, $elm$core$Tuple$second, classes))));
 };
 var $elm$html$Html$input = _VirtualDom_node('input');
+var $elm$core$List$intersperse = F2(
+	function (sep, xs) {
+		if (!xs.b) {
+			return _List_Nil;
+		} else {
+			var hd = xs.a;
+			var tl = xs.b;
+			var step = F2(
+				function (x, rest) {
+					return A2(
+						$elm$core$List$cons,
+						sep,
+						A2($elm$core$List$cons, x, rest));
+				});
+			var spersed = A3($elm$core$List$foldr, step, _List_Nil, tl);
+			return A2($elm$core$List$cons, hd, spersed);
+		}
+	});
 var $elm$html$Html$Attributes$maxlength = function (n) {
 	return A2(
 		_VirtualDom_attribute,
@@ -6075,52 +6097,69 @@ var $elm$html$Html$Attributes$boolProperty = F2(
 			$elm$json$Json$Encode$bool(bool));
 	});
 var $elm$html$Html$Attributes$readonly = $elm$html$Html$Attributes$boolProperty('readOnly');
-var $author$project$Main$setHours = F2(
-	function (text, timeLeft) {
-		var newHour = A2(
-			$elm$core$Maybe$withDefault,
-			0,
-			$elm$core$String$toInt(text));
-		return _Utils_update(
-			timeLeft,
-			{hours: newHour});
-	});
-var $elm$core$Basics$clamp = F3(
-	function (low, high, number) {
-		return (_Utils_cmp(number, low) < 0) ? low : ((_Utils_cmp(number, high) > 0) ? high : number);
-	});
-var $author$project$Main$setMinutes = F2(
-	function (text, timeLeft) {
-		var newMinute = A3(
-			$elm$core$Basics$clamp,
-			0,
-			59,
-			A2(
-				$elm$core$Maybe$withDefault,
-				0,
-				$elm$core$String$toInt(text)));
-		return _Utils_update(
-			timeLeft,
-			{minutes: newMinute});
-	});
-var $author$project$Main$setSeconds = F2(
-	function (text, timeLeft) {
-		var newSecond = A3(
-			$elm$core$Basics$clamp,
-			0,
-			59,
-			A2(
-				$elm$core$Maybe$withDefault,
-				0,
-				$elm$core$String$toInt(text)));
-		return _Utils_update(
-			timeLeft,
-			{seconds: newSecond});
-	});
 var $elm$html$Html$Attributes$title = $elm$html$Html$Attributes$stringProperty('title');
 var $elm$html$Html$Attributes$type_ = $elm$html$Html$Attributes$stringProperty('type');
 var $elm$html$Html$Attributes$value = $elm$html$Html$Attributes$stringProperty('value');
 var $author$project$Main$viewTimer = function (timer) {
+	var viewTimeInput = F3(
+		function (timeName, timeValue, updateFunc) {
+			return A2(
+				$elm$html$Html$input,
+				_List_fromArray(
+					[
+						$elm$html$Html$Attributes$type_('text'),
+						$elm$html$Html$Attributes$name(timeName),
+						$elm$html$Html$Attributes$maxlength(2),
+						$elm$html$Html$Attributes$value(
+						$author$project$Main$timerIsPlaying(timer) ? $author$project$Main$formatTime(timeValue) : $elm$core$String$fromInt(timeValue)),
+						$elm$html$Html$Attributes$readonly(
+						$author$project$Main$timerIsPlaying(timer)),
+						$elm$html$Html$Events$onInput(
+						A2($author$project$Main$TimerTimeChange, updateFunc, timer.id))
+					]),
+				_List_Nil);
+		});
+	var setSeconds = F2(
+		function (text, timeLeft) {
+			return _Utils_update(
+				timeLeft,
+				{
+					seconds: A3(
+						$elm$core$Basics$clamp,
+						0,
+						59,
+						A2(
+							$elm$core$Maybe$withDefault,
+							0,
+							$elm$core$String$toInt(text)))
+				});
+		});
+	var setMinutes = F2(
+		function (text, timeLeft) {
+			return _Utils_update(
+				timeLeft,
+				{
+					minutes: A3(
+						$elm$core$Basics$clamp,
+						0,
+						59,
+						A2(
+							$elm$core$Maybe$withDefault,
+							0,
+							$elm$core$String$toInt(text)))
+				});
+		});
+	var setHours = F2(
+		function (text, timeLeft) {
+			return _Utils_update(
+				timeLeft,
+				{
+					hours: A2(
+						$elm$core$Maybe$withDefault,
+						0,
+						$elm$core$String$toInt(text))
+				});
+		});
 	return A2(
 		$elm$html$Html$div,
 		_List_fromArray(
@@ -6158,56 +6197,15 @@ var $author$project$Main$viewTimer = function (timer) {
 					[
 						$elm$html$Html$Attributes$class('tid-time')
 					]),
-				_List_fromArray(
-					[
-						A2(
-						$elm$html$Html$input,
-						_List_fromArray(
-							[
-								$elm$html$Html$Attributes$type_('text'),
-								$elm$html$Html$Attributes$name('hours'),
-								$elm$html$Html$Attributes$maxlength(2),
-								$elm$html$Html$Attributes$value(
-								$author$project$Main$timerIsPlaying(timer) ? $author$project$Main$formatTime(timer.timeLeft.hours) : $elm$core$String$fromInt(timer.timeLeft.hours)),
-								$elm$html$Html$Attributes$readonly(
-								$author$project$Main$timerIsPlaying(timer)),
-								$elm$html$Html$Events$onInput(
-								A2($author$project$Main$TimerTimeChange, $author$project$Main$setHours, timer.id))
-							]),
-						_List_Nil),
-						$elm$html$Html$text('.'),
-						A2(
-						$elm$html$Html$input,
-						_List_fromArray(
-							[
-								$elm$html$Html$Attributes$type_('text'),
-								$elm$html$Html$Attributes$name('minutes'),
-								$elm$html$Html$Attributes$maxlength(2),
-								$elm$html$Html$Attributes$value(
-								$author$project$Main$timerIsPlaying(timer) ? $author$project$Main$formatTime(timer.timeLeft.minutes) : $elm$core$String$fromInt(timer.timeLeft.minutes)),
-								$elm$html$Html$Attributes$readonly(
-								$author$project$Main$timerIsPlaying(timer)),
-								$elm$html$Html$Events$onInput(
-								A2($author$project$Main$TimerTimeChange, $author$project$Main$setMinutes, timer.id))
-							]),
-						_List_Nil),
-						$elm$html$Html$text('.'),
-						A2(
-						$elm$html$Html$input,
-						_List_fromArray(
-							[
-								$elm$html$Html$Attributes$type_('text'),
-								$elm$html$Html$Attributes$name('seconds'),
-								$elm$html$Html$Attributes$maxlength(2),
-								$elm$html$Html$Attributes$value(
-								$author$project$Main$timerIsPlaying(timer) ? $author$project$Main$formatTime(timer.timeLeft.seconds) : $elm$core$String$fromInt(timer.timeLeft.seconds)),
-								$elm$html$Html$Attributes$readonly(
-								$author$project$Main$timerIsPlaying(timer)),
-								$elm$html$Html$Events$onInput(
-								A2($author$project$Main$TimerTimeChange, $author$project$Main$setSeconds, timer.id))
-							]),
-						_List_Nil)
-					])),
+				A2(
+					$elm$core$List$intersperse,
+					$elm$html$Html$text('.'),
+					_List_fromArray(
+						[
+							A3(viewTimeInput, 'hours', timer.timeLeft.hours, setHours),
+							A3(viewTimeInput, 'minutes', timer.timeLeft.minutes, setMinutes),
+							A3(viewTimeInput, 'seconds', timer.timeLeft.seconds, setSeconds)
+						]))),
 				A2(
 				$elm$html$Html$div,
 				_List_fromArray(

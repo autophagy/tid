@@ -1,4 +1,4 @@
-port module Main exposing (Model, Msg, Time, Timer, main)
+port module Main exposing (Model, Msg, TimeLeft, Timer, main)
 
 import Browser
 import Html exposing (Html, a, button, div, img, input, text)
@@ -15,52 +15,16 @@ import Time
 type alias Timer =
     { id : Int
     , title : String
-    , timeLeft : Time
+    , timeLeft : TimeLeft
     , targetTime : Maybe Time.Posix
     }
 
 
-type alias Time =
+type alias TimeLeft =
     { hours : Int
     , minutes : Int
     , seconds : Int
     }
-
-
-setHours : String -> Time -> Time
-setHours text timeLeft =
-    let
-        newHour : Int
-        newHour =
-            Maybe.withDefault 0 (String.toInt text)
-    in
-    { timeLeft | hours = newHour }
-
-
-setMinutes : String -> Time -> Time
-setMinutes text timeLeft =
-    let
-        newMinute : Int
-        newMinute =
-            text
-                |> String.toInt
-                |> Maybe.withDefault 0
-                |> clamp 0 59
-    in
-    { timeLeft | minutes = newMinute }
-
-
-setSeconds : String -> Time -> Time
-setSeconds text timeLeft =
-    let
-        newSecond : Int
-        newSecond =
-            text
-                |> String.toInt
-                |> Maybe.withDefault 0
-                |> clamp 0 59
-    in
-    { timeLeft | seconds = newSecond }
 
 
 type alias Model =
@@ -103,12 +67,12 @@ formatTime time =
         String.fromInt time
 
 
-totalSeconds : Time -> Int
+totalSeconds : TimeLeft -> Int
 totalSeconds timeLeft =
     (timeLeft.hours * 3600) + (timeLeft.minutes * 60) + timeLeft.seconds
 
 
-refreshTimeLeft : Time.Posix -> Time.Posix -> Time
+refreshTimeLeft : Time.Posix -> Time.Posix -> TimeLeft
 refreshTimeLeft target now =
     let
         diff : Int
@@ -138,7 +102,7 @@ timerIsPlaying timer =
             False
 
 
-createTargetTime : Time.Posix -> Time -> Time.Posix
+createTargetTime : Time.Posix -> TimeLeft -> Time.Posix
 createTargetTime started delta =
     Time.millisToPosix (Time.posixToMillis started + (totalSeconds delta * 1000))
 
@@ -153,7 +117,7 @@ type Msg
     | PlayTimers
     | PauseTimers
     | TimerTitleChange Int String
-    | TimerTimeChange (String -> Time -> Time) Int String
+    | TimerTimeChange (String -> TimeLeft -> TimeLeft) Int String
     | PlayTimer Int
     | SetTimerTarget Int Time.Posix
     | StopTimer Int
@@ -345,6 +309,37 @@ view model =
 
 viewTimer : Timer -> Html Msg
 viewTimer timer =
+    let
+        setHours : String -> TimeLeft -> TimeLeft
+        setHours text timeLeft =
+            { timeLeft | hours = Maybe.withDefault 0 (String.toInt text) }
+
+        setMinutes : String -> TimeLeft -> TimeLeft
+        setMinutes text timeLeft =
+            { timeLeft | minutes = text |> String.toInt |> Maybe.withDefault 0 |> clamp 0 59 }
+
+        setSeconds : String -> TimeLeft -> TimeLeft
+        setSeconds text timeLeft =
+            { timeLeft | seconds = text |> String.toInt |> Maybe.withDefault 0 |> clamp 0 59 }
+
+        viewTimeInput : String -> Int -> (String -> TimeLeft -> TimeLeft) -> Html Msg
+        viewTimeInput timeName timeValue updateFunc =
+            input
+                [ type_ "text"
+                , name timeName
+                , maxlength 2
+                , value
+                    (if timerIsPlaying timer then
+                        formatTime timeValue
+
+                     else
+                        String.fromInt timeValue
+                    )
+                , readonly <| timerIsPlaying timer
+                , TimerTimeChange updateFunc timer.id |> onInput
+                ]
+                []
+    in
     div
         [ id (String.fromInt timer.id)
         , classList
@@ -354,55 +349,12 @@ viewTimer timer =
             ]
         ]
         [ div [ class "tid-id" ] [ String.fromInt timer.id |> text ]
-        , div [ class "tid-time" ]
-            [ input
-                [ type_ "text"
-                , name "hours"
-                , maxlength 2
-                , value
-                    (if timerIsPlaying timer then
-                        formatTime timer.timeLeft.hours
-
-                     else
-                        String.fromInt timer.timeLeft.hours
-                    )
-                , readonly <| timerIsPlaying timer
-                , TimerTimeChange setHours timer.id |> onInput
+        , div [ class "tid-time" ] <|
+            List.intersperse (text ".")
+                [ viewTimeInput "hours" timer.timeLeft.hours setHours
+                , viewTimeInput "minutes" timer.timeLeft.minutes setMinutes
+                , viewTimeInput "seconds" timer.timeLeft.seconds setSeconds
                 ]
-                []
-            , text "."
-            , input
-                [ type_ "text"
-                , name "minutes"
-                , maxlength 2
-                , value
-                    (if timerIsPlaying timer then
-                        formatTime timer.timeLeft.minutes
-
-                     else
-                        String.fromInt timer.timeLeft.minutes
-                    )
-                , readonly <| timerIsPlaying timer
-                , TimerTimeChange setMinutes timer.id |> onInput
-                ]
-                []
-            , text "."
-            , input
-                [ type_ "text"
-                , name "seconds"
-                , maxlength 2
-                , value
-                    (if timerIsPlaying timer then
-                        formatTime timer.timeLeft.seconds
-
-                     else
-                        String.fromInt timer.timeLeft.seconds
-                    )
-                , readonly <| timerIsPlaying timer
-                , TimerTimeChange setSeconds timer.id |> onInput
-                ]
-                []
-            ]
         , div [ class "tid-title" ]
             [ input
                 [ type_ "text"

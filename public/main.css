@@ -45,7 +45,6 @@ input[type="text"] {
 }
 
 #sidebar {
-    width: 10em;
     padding: 2em;
 }
 
@@ -70,9 +69,10 @@ input[type="text"] {
 #tidspace {
     width: 100%;
     padding: 1em;
-    display: flex;
-    flex-wrap: wrap;
-    align-content: flex-start;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, 682px);
+    grid-template-rows: repeat(auto-fill, 142px);
+    justify-content: center;
 }
 
 .tid {
